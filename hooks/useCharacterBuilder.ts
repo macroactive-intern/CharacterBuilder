@@ -24,6 +24,42 @@ function clampStep(step: number) {
   return Math.min(Math.max(step, FIRST_STEP), LAST_STEP);
 }
 
+function parseUrlStep() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const stepParam = new URLSearchParams(window.location.search).get("step");
+
+  if (stepParam === null) {
+    return null;
+  }
+
+  const step = Number(stepParam);
+
+  if (!Number.isInteger(step) || step < FIRST_STEP || step > LAST_STEP) {
+    return undefined;
+  }
+
+  return step;
+}
+
+function syncStepUrl(step: number, mode: "push" | "replace") {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  url.searchParams.set("step", String(clampStep(step)));
+
+  if (mode === "replace") {
+    window.history.replaceState(null, "", url);
+    return;
+  }
+
+  window.history.pushState(null, "", url);
+}
+
 function getErrorMessage(error: unknown) {
   return error instanceof Error
     ? error.message
@@ -46,6 +82,15 @@ export function useCharacterBuilder() {
 
   useEffect(() => {
     const draft = loadDraft();
+    const parsedStep = parseUrlStep();
+    const isInvalidUrlStep = parsedStep === undefined;
+    const restoredStep = draft ? clampStep(draft.step) : FIRST_STEP;
+    const initialStep =
+      parsedStep === null
+        ? restoredStep
+        : isInvalidUrlStep
+          ? FIRST_STEP
+          : parsedStep;
 
     if (draft) {
       const restoredData = {
@@ -53,13 +98,37 @@ export function useCharacterBuilder() {
         ...draft.data,
       };
 
-      setCurrentStep(clampStep(draft.step));
       setFormData(restoredData);
       reset(restoredData);
     }
 
+    setCurrentStep(initialStep);
+    syncStepUrl(initialStep, "replace");
     setHasRestoredDraft(true);
   }, [reset]);
+
+  useEffect(() => {
+    function handlePopState() {
+      const parsedStep = parseUrlStep();
+      const nextStep = parsedStep ?? FIRST_STEP;
+
+      if (parsedStep === null || parsedStep === undefined) {
+        syncStepUrl(nextStep, "replace");
+      }
+
+      setCurrentStep((previousStep) => {
+        if (nextStep !== previousStep) {
+          setStepDirection(nextStep > previousStep ? 1 : -1);
+        }
+
+        return nextStep;
+      });
+    }
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   useEffect(() => {
     const subscription = watch((values) => {
@@ -86,6 +155,7 @@ export function useCharacterBuilder() {
 
       if (nextStep !== previousStep) {
         setStepDirection(nextStep > previousStep ? 1 : -1);
+        syncStepUrl(nextStep, "push");
       }
 
       return nextStep;
@@ -93,13 +163,29 @@ export function useCharacterBuilder() {
   }, []);
 
   const nextStep = useCallback(() => {
-    setStepDirection(1);
-    setCurrentStep((step) => clampStep(step + 1));
+    setCurrentStep((step) => {
+      const nextStepValue = clampStep(step + 1);
+
+      if (nextStepValue !== step) {
+        setStepDirection(1);
+        syncStepUrl(nextStepValue, "push");
+      }
+
+      return nextStepValue;
+    });
   }, []);
 
   const prevStep = useCallback(() => {
-    setStepDirection(-1);
-    setCurrentStep((step) => clampStep(step - 1));
+    setCurrentStep((step) => {
+      const nextStepValue = clampStep(step - 1);
+
+      if (nextStepValue !== step) {
+        setStepDirection(-1);
+        syncStepUrl(nextStepValue, "push");
+      }
+
+      return nextStepValue;
+    });
   }, []);
 
   const updateData = useCallback(
