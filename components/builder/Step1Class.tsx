@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   characterClasses,
@@ -11,6 +12,7 @@ import {
 
 type Step1ClassProps = {
   defaultValues?: Partial<Step1Character>;
+  onChange?: (data: Partial<Step1Character>) => void;
   onSubmit?: (data: Step1Character) => void;
 };
 
@@ -26,6 +28,7 @@ function formatStatName(stat: string) {
 
 export default function Step1Class({
   defaultValues,
+  onChange,
   onSubmit,
 }: Step1ClassProps) {
   const {
@@ -49,6 +52,14 @@ export default function Step1Class({
       return `${characterClass}: +${bonus.bonus} ${formatStatName(bonus.stat)}`;
     })
     .join(" | ");
+
+  useEffect(() => {
+    const subscription = watch((values) => {
+      onChange?.(values as Partial<Step1Character>);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [onChange, watch]);
 
   function handleValidSubmit(data: Step1Character) {
     onSubmit?.(data);

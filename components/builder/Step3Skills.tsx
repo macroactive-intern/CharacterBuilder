@@ -12,6 +12,7 @@ import {
 
 type Step3SkillsProps = {
   defaultValues?: string[];
+  onChange?: (skills: string[]) => void;
   onSubmit?: (skills: string[]) => void;
 };
 
@@ -38,6 +39,7 @@ function getPrerequisiteText(requires: string[]) {
 
 export default function Step3Skills({
   defaultValues = [],
+  onChange,
   onSubmit,
 }: Step3SkillsProps) {
   const [selectedSkills, setSelectedSkills] = useState<string[]>(() =>
@@ -68,6 +70,7 @@ export default function Step3Skills({
       const removedCount = selectedSkills.length - nextSkills.length;
 
       setSelectedSkills(nextSkills);
+      onChange?.(nextSkills);
       setSkillFeedback(
         skillId,
         "removed",
@@ -102,6 +105,7 @@ export default function Step3Skills({
     const nextSkills = addSkill(selectedSkills, skillId);
 
     setSelectedSkills(nextSkills);
+    onChange?.(nextSkills);
     setSkillFeedback(skillId, "selected", `${getSkillName(skillId)} selected.`);
   }
 

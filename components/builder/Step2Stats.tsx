@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import {
   classBonusConfig,
@@ -15,6 +15,7 @@ import {
 type Step2StatsProps = {
   characterClass?: CharacterClass;
   defaultValues?: Partial<Step2Character>;
+  onChange?: (data: Partial<Step2Character>) => void;
   onSubmit?: (data: Step2Character) => void;
 };
 
@@ -41,6 +42,7 @@ function getStatValue(value: unknown) {
 export default function Step2Stats({
   characterClass = "Warrior",
   defaultValues,
+  onChange,
   onSubmit,
 }: Step2StatsProps) {
   const {
@@ -77,6 +79,14 @@ export default function Step2Stats({
       ),
     [classBonus.bonus, classBonus.stat, watchedStats],
   );
+
+  useEffect(() => {
+    const subscription = watch((values) => {
+      onChange?.(values as Partial<Step2Character>);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [onChange, watch]);
 
   function handleValidSubmit(data: Step2Character) {
     onSubmit?.(data);

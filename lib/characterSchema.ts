@@ -49,23 +49,30 @@ export const step1Schema = z.object({
     .max(200, "Backstory must be 200 characters or fewer."),
 });
 
-export const step2Schema = z
-  .object({
-    strength: statSchema,
-    intelligence: statSchema,
-    agility: statSchema,
-    vitality: statSchema,
-  })
-  .refine(
-    (stats) =>
-      stats.strength + stats.intelligence + stats.agility + stats.vitality <= 50,
-    {
-      message: "Total stats must be 50 or less before class bonus.",
-      path: ["strength"],
-    },
-  );
+const step2BaseSchema = z.object({
+  strength: statSchema,
+  intelligence: statSchema,
+  agility: statSchema,
+  vitality: statSchema,
+});
 
-export const step3Schema = z.object({});
+function hasValidBaseStatTotal(stats: z.infer<typeof step2BaseSchema>) {
+  return (
+    stats.strength + stats.intelligence + stats.agility + stats.vitality <= 50
+  );
+}
+
+export const step2Schema = step2BaseSchema.refine(hasValidBaseStatTotal, {
+  message: "Total stats must be 50 or less before class bonus.",
+  path: ["strength"],
+});
+
+export const step3Schema = z.object({
+  skills: z
+    .array(z.string())
+    .max(3, "Choose up to 3 skills.")
+    .default([]),
+});
 
 export const step4Schema = z.object({
   hairColor: z
@@ -83,10 +90,17 @@ export const step4Schema = z.object({
   motto: z.string().max(50, "Motto must be 50 characters or fewer."),
 });
 
-export const characterSchema = step1Schema
-  .merge(step2Schema)
-  .merge(step3Schema)
-  .merge(step4Schema)
+export const characterSchema = z
+  .object({
+    ...step1Schema.shape,
+    ...step2BaseSchema.shape,
+    ...step3Schema.shape,
+    ...step4Schema.shape,
+  })
+  .refine(hasValidBaseStatTotal, {
+    message: "Total stats must be 50 or less before class bonus.",
+    path: ["strength"],
+  })
   .transform((character) => {
     switch (character.class) {
       case "Warrior":
@@ -140,4 +154,5 @@ export const defaultCharacter: CharacterInput = {
   eyeColor: "Green",
   height: "5'10\"",
   motto: "",
+  skills: [],
 };

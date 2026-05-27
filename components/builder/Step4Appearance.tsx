@@ -1,11 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { step4Schema, type Step4Character } from "@/lib/characterSchema";
 
 type Step4AppearanceProps = {
   defaultValues?: Partial<Step4Character>;
+  onChange?: (data: Partial<Step4Character>) => void;
   onSubmit?: (data: Step4Character) => void;
 };
 
@@ -20,6 +22,7 @@ const defaultStepValues: Step4Character = {
 
 export default function Step4Appearance({
   defaultValues,
+  onChange,
   onSubmit,
 }: Step4AppearanceProps) {
   const {
@@ -37,6 +40,14 @@ export default function Step4Appearance({
   });
   const motto = watch("motto", "");
   const mottoLength = motto.length;
+
+  useEffect(() => {
+    const subscription = watch((values) => {
+      onChange?.(values as Partial<Step4Character>);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [onChange, watch]);
 
   function handleValidSubmit(data: Step4Character) {
     onSubmit?.(data);
