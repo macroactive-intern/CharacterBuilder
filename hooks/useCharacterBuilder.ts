@@ -135,13 +135,15 @@ export function useCharacterBuilder() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(parsedCharacter.data),
+        body: JSON.stringify(latestData),
       });
 
       if (!response.ok) {
-        throw new Error(
-          `Character submission failed with status ${response.status}.`,
-        );
+        const result = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+
+        throw new Error(result?.error ?? "Character submission failed.");
       }
 
       clearDraft();
