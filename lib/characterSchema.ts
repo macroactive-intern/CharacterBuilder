@@ -67,7 +67,21 @@ export const step2Schema = z
 
 export const step3Schema = z.object({});
 
-export const step4Schema = z.object({});
+export const step4Schema = z.object({
+  hairColor: z
+    .string()
+    .min(2, "Hair color must be at least 2 characters.")
+    .max(30, "Hair color must be 30 characters or fewer."),
+  eyeColor: z
+    .string()
+    .min(2, "Eye color must be at least 2 characters.")
+    .max(30, "Eye color must be 30 characters or fewer."),
+  height: z
+    .string()
+    .min(2, "Height is required.")
+    .max(20, "Height must be 20 characters or fewer."),
+  motto: z.string().max(50, "Motto must be 50 characters or fewer."),
+});
 
 export const characterSchema = step1Schema
   .merge(step2Schema)
@@ -122,4 +136,8 @@ export const defaultCharacter: CharacterInput = {
   intelligence: 10,
   agility: 10,
   vitality: 10,
+  hairColor: "Brown",
+  eyeColor: "Green",
+  height: "5'10\"",
+  motto: "",
 };
