@@ -31,7 +31,11 @@ export const classBonusConfig = {
   },
 } as const satisfies Record<CharacterClass, { stat: StatName; bonus: number }>;
 
-const statSchema = z.number().int().min(1).max(20);
+const statSchema = z
+  .number()
+  .int("Stats must be whole numbers.")
+  .min(1, "Stats must be at least 1.")
+  .max(20, "Stats must be 20 or fewer.");
 
 export const step1Schema = z.object({
   name: z
