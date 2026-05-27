@@ -90,7 +90,7 @@ export const step4Schema = z.object({
   motto: z.string().max(50, "Motto must be 50 characters or fewer."),
 });
 
-export const characterSchema = z
+export const characterInputSchema = z
   .object({
     ...step1Schema.shape,
     ...step2BaseSchema.shape,
@@ -100,38 +100,39 @@ export const characterSchema = z
   .refine(hasValidBaseStatTotal, {
     message: "Total stats must be 50 or less before class bonus.",
     path: ["strength"],
-  })
-  .transform((character) => {
-    switch (character.class) {
-      case "Warrior":
-        return {
-          ...character,
-          strength: character.strength + classBonusConfig.Warrior.bonus,
-        };
-      case "Mage":
-        return {
-          ...character,
-          intelligence:
-            character.intelligence + classBonusConfig.Mage.bonus,
-        };
-      case "Rogue":
-        return {
-          ...character,
-          agility: character.agility + classBonusConfig.Rogue.bonus,
-        };
-      case "Ranger":
-        return {
-          ...character,
-          vitality: character.vitality + classBonusConfig.Ranger.bonus,
-        };
-    }
   });
+
+export const characterSchema = characterInputSchema.transform((character) => {
+  switch (character.class) {
+    case "Warrior":
+      return {
+        ...character,
+        strength: character.strength + classBonusConfig.Warrior.bonus,
+      };
+    case "Mage":
+      return {
+        ...character,
+        intelligence: character.intelligence + classBonusConfig.Mage.bonus,
+      };
+    case "Rogue":
+      return {
+        ...character,
+        agility: character.agility + classBonusConfig.Rogue.bonus,
+      };
+    case "Ranger":
+      return {
+        ...character,
+        vitality: character.vitality + classBonusConfig.Ranger.bonus,
+      };
+  }
+});
 
 export const schemas = {
   step1: step1Schema,
   step2: step2Schema,
   step3: step3Schema,
   step4: step4Schema,
+  characterInput: characterInputSchema,
   character: characterSchema,
 };
 
@@ -139,7 +140,7 @@ export type Step1Character = z.infer<typeof step1Schema>;
 export type Step2Character = z.infer<typeof step2Schema>;
 export type Step3Character = z.infer<typeof step3Schema>;
 export type Step4Character = z.infer<typeof step4Schema>;
-export type CharacterInput = z.input<typeof characterSchema>;
+export type CharacterInput = z.infer<typeof characterInputSchema>;
 export type Character = z.infer<typeof characterSchema>;
 
 export const defaultCharacter: CharacterInput = {

@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { useState } from "react";
 import BuilderProgress from "@/components/builder/BuilderProgress";
 import CharacterPreview from "@/components/builder/CharacterPreview";
 import Step1Class from "@/components/builder/Step1Class";
@@ -35,7 +36,12 @@ const stepVariants = {
 export default function BuilderPage() {
   const {
     currentStep,
+    exportCharacter,
     formData,
+    importCharacter,
+    importExportError,
+    importExportMessage,
+    importVersion,
     isSubmitting,
     nextStep,
     prevStep,
@@ -44,6 +50,7 @@ export default function BuilderPage() {
     submitError,
     updateData,
   } = useCharacterBuilder();
+  const [importText, setImportText] = useState("");
   const characterClass =
     (formData.class as CharacterClass | undefined) ?? defaultCharacter.class;
   const selectedSkills = formData.skills ?? [];
@@ -66,6 +73,12 @@ export default function BuilderPage() {
   function saveStep4(data: Step4Character) {
     updateData(data);
     nextStep();
+  }
+
+  function handleImport() {
+    if (importCharacter(importText)) {
+      setImportText("");
+    }
   }
 
   function renderStep() {
@@ -132,6 +145,52 @@ export default function BuilderPage() {
 
         <BuilderProgress currentStep={currentStep} />
 
+        <section className="mt-6 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-start">
+            <div className="space-y-2">
+              <label
+                className="text-sm font-medium text-slate-800"
+                htmlFor="character-import"
+              >
+                Import character JSON
+              </label>
+              <textarea
+                className="min-h-24 w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                id="character-import"
+                onChange={(event) => setImportText(event.target.value)}
+                placeholder='Paste JSON, for example {"character":{...}}'
+                value={importText}
+              />
+              {importExportError ? (
+                <p className="text-sm text-red-600">{importExportError}</p>
+              ) : null}
+              {importExportMessage ? (
+                <p className="text-sm text-emerald-700">
+                  {importExportMessage}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+              <button
+                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                onClick={exportCharacter}
+                type="button"
+              >
+                Export JSON
+              </button>
+              <button
+                className="inline-flex h-10 items-center justify-center rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300"
+                disabled={importText.trim().length === 0}
+                onClick={handleImport}
+                type="button"
+              >
+                Import JSON
+              </button>
+            </div>
+          </div>
+        </section>
+
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
           <div className="min-w-0">
             <AnimatePresence custom={stepDirection} mode="wait">
@@ -140,7 +199,7 @@ export default function BuilderPage() {
                 custom={stepDirection}
                 exit="exit"
                 initial="enter"
-                key={currentStep}
+                key={`${currentStep}-${importVersion}`}
                 transition={{ duration: 0.28, ease: "easeOut" }}
                 variants={stepVariants}
               >

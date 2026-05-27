@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import {
+  characterInputSchema,
   characterSchema,
   defaultCharacter,
   type CharacterInput,
@@ -66,6 +67,42 @@ function getErrorMessage(error: unknown) {
     : "Something went wrong. Please try again.";
 }
 
+function createDownloadName(name: string) {
+  const slug = name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return `${slug || "character"}-builder-export.json`;
+}
+
+function getImportCandidate(value: unknown) {
+  if (typeof value !== "object" || value === null) {
+    return value;
+  }
+
+  if ("character" in value) {
+    return value.character;
+  }
+
+  if ("data" in value) {
+    return value.data;
+  }
+
+  return value;
+}
+
+function getImportStep(value: unknown) {
+  if (typeof value !== "object" || value === null || !("step" in value)) {
+    return null;
+  }
+
+  const step = Number(value.step);
+
+  return Number.isInteger(step) ? clampStep(step) : null;
+}
+
 export function useCharacterBuilder() {
   const router = useRouter();
   const form = useForm<CharacterInput>({
@@ -78,6 +115,13 @@ export function useCharacterBuilder() {
     useState<Partial<CharacterData>>(defaultCharacter);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [importExportMessage, setImportExportMessage] = useState<string | null>(
+    null,
+  );
+  const [importExportError, setImportExportError] = useState<string | null>(
+    null,
+  );
+  const [importVersion, setImportVersion] = useState(0);
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
 
   useEffect(() => {
@@ -201,6 +245,101 @@ export function useCharacterBuilder() {
     [getValues, reset],
   );
 
+  const exportCharacter = useCallback(() => {
+    setImportExportError(null);
+    setImportExportMessage(null);
+
+    const latestData = {
+      ...defaultCharacter,
+      ...formData,
+      ...getValues(),
+    };
+    const parsedCharacter = characterInputSchema.safeParse(latestData);
+
+    if (!parsedCharacter.success) {
+      setImportExportError(
+        "Complete the required character details before exporting.",
+      );
+      return false;
+    }
+
+    const exportPayload = {
+      exportedAt: new Date().toISOString(),
+      step: currentStep,
+      type: "character-builder.character",
+      version: 1,
+      character: parsedCharacter.data,
+    };
+    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = createDownloadName(parsedCharacter.data.name);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setImportExportMessage("Character export downloaded.");
+
+    return true;
+  }, [currentStep, formData, getValues]);
+
+  const importCharacter = useCallback(
+    (jsonText: string) => {
+      setImportExportError(null);
+      setImportExportMessage(null);
+
+      let parsedJson: unknown;
+
+      try {
+        parsedJson = JSON.parse(jsonText);
+      } catch {
+        setImportExportError("Invalid JSON. Check the pasted character data.");
+        return false;
+      }
+
+      const parsedCharacter = characterInputSchema.safeParse(
+        getImportCandidate(parsedJson),
+      );
+
+      if (!parsedCharacter.success) {
+        setImportExportError(
+          parsedCharacter.error.issues[0]?.message ??
+            "Imported character data is invalid.",
+        );
+        return false;
+      }
+
+      reset(parsedCharacter.data);
+      setFormData(parsedCharacter.data);
+      const importedStep = getImportStep(parsedJson);
+
+      if (importedStep) {
+        setCurrentStep((previousStep) => {
+          if (importedStep !== previousStep) {
+            setStepDirection(importedStep > previousStep ? 1 : -1);
+          }
+
+          return importedStep;
+        });
+        syncStepUrl(importedStep, "replace");
+      }
+
+      saveDraft({
+        step: importedStep ?? currentStep,
+        data: parsedCharacter.data,
+      });
+      setImportVersion((version) => version + 1);
+      setImportExportMessage("Character import restored into the builder.");
+
+      return true;
+    },
+    [currentStep, reset],
+  );
+
   const submitCharacter = useCallback(async () => {
     setIsSubmitting(true);
     setSubmitError(null);
@@ -261,7 +400,12 @@ export function useCharacterBuilder() {
       step: currentStep,
       stepDirection,
       isSubmitting,
+      importCharacter,
+      importExportError,
+      importExportMessage,
+      importVersion,
       submitError,
+      exportCharacter,
       setStep: goToStep,
       nextStep,
       prevStep,
@@ -273,6 +417,10 @@ export function useCharacterBuilder() {
       form,
       formData,
       goToStep,
+      importCharacter,
+      importExportError,
+      importExportMessage,
+      importVersion,
       isSubmitting,
       nextStep,
       prevStep,
@@ -280,6 +428,7 @@ export function useCharacterBuilder() {
       submitCharacter,
       submitError,
       updateData,
+      exportCharacter,
     ],
   );
 }
