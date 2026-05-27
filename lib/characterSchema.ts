@@ -34,9 +34,15 @@ export const classBonusConfig = {
 const statSchema = z.number().int().min(1).max(20);
 
 export const step1Schema = z.object({
-  name: z.string().min(2).max(40),
+  name: z
+    .string()
+    .min(2, "Name must be at least 2 characters.")
+    .max(40, "Name must be 40 characters or fewer."),
   class: z.enum(characterClasses),
-  backstory: z.string().min(10).max(200),
+  backstory: z
+    .string()
+    .min(10, "Backstory must be at least 10 characters.")
+    .max(200, "Backstory must be 200 characters or fewer."),
 });
 
 export const step2Schema = z
