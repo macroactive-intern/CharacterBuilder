@@ -2,7 +2,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import Link from "next/link";
 import { statNames, type Character, type StatName } from "@/lib/characterSchema";
-import { skillTree } from "@/lib/skillTree";
+import { getSkillName, statLabels } from "@/lib/characterUtils";
+import SkillBadge from "@/components/ui/SkillBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -17,18 +18,7 @@ type BuilderSuccessPageProps = {
   };
 };
 
-const statLabels: Record<StatName, string> = {
-  strength: "Strength",
-  intelligence: "Intelligence",
-  agility: "Agility",
-  vitality: "Vitality",
-};
-
 const charactersPath = path.join(process.cwd(), "data", "characters.json");
-
-function getSkillName(skillId: string) {
-  return skillTree.find((skill) => skill.id === skillId)?.name ?? skillId;
-}
 
 async function loadCharacters() {
   try {
@@ -98,21 +88,21 @@ export default async function BuilderSuccessPage({
                 <h2 className="text-sm font-semibold uppercase text-slate-500">
                   Final stats
                 </h2>
-                <div className="mt-3 grid grid-cols-2 gap-3">
+                <dl className="mt-3 grid grid-cols-2 gap-3">
                   {statNames.map((statName) => (
                     <div
                       className="rounded-md border border-slate-200 bg-slate-50 p-3"
                       key={statName}
                     >
-                      <p className="text-xs text-slate-500">
+                      <dt className="text-xs text-slate-500">
                         {statLabels[statName]}
-                      </p>
-                      <p className="mt-1 text-xl font-bold text-slate-950">
+                      </dt>
+                      <dd className="mt-1 text-xl font-bold text-slate-950">
                         {character[statName]}
-                      </p>
+                      </dd>
                     </div>
                   ))}
-                </div>
+                </dl>
               </section>
 
               <section className="rounded-md border border-slate-200 p-4">
@@ -122,12 +112,7 @@ export default async function BuilderSuccessPage({
                 <div className="mt-3 flex flex-wrap gap-2">
                   {character.skills.length > 0 ? (
                     character.skills.map((skillId) => (
-                      <span
-                        className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-800"
-                        key={skillId}
-                      >
-                        {getSkillName(skillId)}
-                      </span>
+                      <SkillBadge key={skillId} name={getSkillName(skillId)} />
                     ))
                   ) : (
                     <p className="text-sm text-slate-500">

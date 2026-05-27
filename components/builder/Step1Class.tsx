@@ -9,6 +9,7 @@ import {
   step1Schema,
   type Step1Character,
 } from "@/lib/characterSchema";
+import FieldError from "@/components/ui/FieldError";
 
 type Step1ClassProps = {
   defaultValues?: Partial<Step1Character>;
@@ -83,15 +84,14 @@ export default function Step1Class({
             Name
           </label>
           <input
+            aria-describedby={errors.name ? "name-error" : undefined}
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
             id="name"
             placeholder="Astra Vale"
             type="text"
             {...register("name")}
           />
-          {errors.name ? (
-            <p className="text-sm text-red-600">{errors.name.message}</p>
-          ) : null}
+          <FieldError message={errors.name?.message} />
         </div>
 
         <div className="space-y-2">
@@ -109,9 +109,7 @@ export default function Step1Class({
               </option>
             ))}
           </select>
-          {errors.class ? (
-            <p className="text-sm text-red-600">{errors.class.message}</p>
-          ) : null}
+          <FieldError message={errors.class?.message} />
           <p className="text-sm text-slate-600">
             {selectedClass} gains +{selectedBonus.bonus}{" "}
             {formatStatName(selectedBonus.stat)}.
@@ -131,9 +129,7 @@ export default function Step1Class({
             placeholder="Tell us where this character begins."
             {...register("backstory")}
           />
-          {errors.backstory ? (
-            <p className="text-sm text-red-600">{errors.backstory.message}</p>
-          ) : null}
+          <FieldError message={errors.backstory?.message} />
         </div>
 
         <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">

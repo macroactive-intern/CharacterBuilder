@@ -1,36 +1,21 @@
 "use client";
 
-import { motion } from "framer-motion";
-import type { ReactNode } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { useMemo, type ReactNode } from "react";
 import {
   classBonusConfig,
   defaultCharacter,
   statNames,
   type CharacterInput,
-  type StatName,
 } from "@/lib/characterSchema";
-import { skillTree } from "@/lib/skillTree";
+import { getSkillName, getStatValue, statLabels } from "@/lib/characterUtils";
 
 type CharacterPreviewProps = {
   data?: Partial<CharacterInput>;
   selectedSkills?: string[];
 };
 
-const statLabels: Record<StatName, string> = {
-  strength: "Strength",
-  intelligence: "Intelligence",
-  agility: "Agility",
-  vitality: "Vitality",
-};
-
-function getSkillName(skillId: string) {
-  return skillTree.find((skill) => skill.id === skillId)?.name ?? skillId;
-}
-
-function getStatValue(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
-
+// Defined outside the component so it is not recreated on each render
 function AnimatedValue({
   children,
   valueKey,
@@ -38,10 +23,12 @@ function AnimatedValue({
   children: ReactNode;
   valueKey: string | number;
 }) {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
     <motion.span
-      animate={{ opacity: 1, y: 0 }}
-      initial={{ opacity: 0.55, y: 3 }}
+      animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+      initial={prefersReducedMotion ? {} : { opacity: 0.55, y: 3 }}
       key={valueKey}
       transition={{ duration: 0.18 }}
     >
@@ -59,14 +46,20 @@ export default function CharacterPreview({
     ...data,
   };
   const classBonus = classBonusConfig[character.class];
-  const selectedSkillNames = selectedSkills.map(getSkillName);
+  const prefersReducedMotion = useReducedMotion();
+
+  // Avoid recomputing skill names on every render
+  const selectedSkillNames = useMemo(
+    () => selectedSkills.map(getSkillName),
+    [selectedSkills],
+  );
 
   return (
     <aside className="w-full lg:sticky lg:top-6 lg:self-start">
       <motion.div
-        animate={{ opacity: 1, y: 0 }}
+        animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
         className="overflow-hidden rounded-lg border border-slate-200 bg-slate-950 text-white shadow-lg"
-        initial={{ opacity: 0, y: 8 }}
+        initial={prefersReducedMotion ? {} : { opacity: 0, y: 8 }}
         transition={{ duration: 0.25 }}
       >
         <div className="bg-gradient-to-br from-emerald-500 via-teal-600 to-slate-900 p-5">
@@ -86,11 +79,12 @@ export default function CharacterPreview({
         </div>
 
         <div className="space-y-5 p-5">
-          <section>
+          <section aria-label="Stats">
             <h3 className="text-sm font-semibold uppercase text-slate-300">
               Stats
             </h3>
-            <div className="mt-3 grid grid-cols-2 gap-3">
+            {/* dl/dt/dd for semantic name-value pairs */}
+            <dl className="mt-3 grid grid-cols-2 gap-3">
               {statNames.map((statName) => {
                 const baseValue = getStatValue(character[statName]);
                 const bonusValue =
@@ -107,14 +101,14 @@ export default function CharacterPreview({
                     ].join(" ")}
                     key={statName}
                   >
-                    <p className="text-xs text-slate-300">
+                    <dt className="text-xs text-slate-300">
                       {statLabels[statName]}
-                    </p>
-                    <p className="mt-1 text-xl font-bold">
+                    </dt>
+                    <dd className="mt-1 text-xl font-bold">
                       <AnimatedValue valueKey={`${statName}-${finalValue}`}>
                         {finalValue}
                       </AnimatedValue>
-                    </p>
+                    </dd>
                     {bonusValue > 0 ? (
                       <p className="mt-1 text-xs text-emerald-200">
                         {baseValue} + {bonusValue} class bonus
@@ -123,10 +117,10 @@ export default function CharacterPreview({
                   </div>
                 );
               })}
-            </div>
+            </dl>
           </section>
 
-          <section>
+          <section aria-label="Skills">
             <h3 className="text-sm font-semibold uppercase text-slate-300">
               Skills
             </h3>
@@ -134,9 +128,11 @@ export default function CharacterPreview({
               {selectedSkillNames.length > 0 ? (
                 selectedSkillNames.map((skillName) => (
                   <motion.span
-                    animate={{ opacity: 1, scale: 1 }}
+                    animate={prefersReducedMotion ? {} : { opacity: 1, scale: 1 }}
                     className="rounded-full bg-emerald-400/15 px-3 py-1 text-sm font-medium text-emerald-100"
-                    initial={{ opacity: 0, scale: 0.96 }}
+                    initial={
+                      prefersReducedMotion ? {} : { opacity: 0, scale: 0.96 }
+                    }
                     key={skillName}
                     transition={{ duration: 0.18 }}
                   >
@@ -149,7 +145,7 @@ export default function CharacterPreview({
             </div>
           </section>
 
-          <section>
+          <section aria-label="Appearance">
             <h3 className="text-sm font-semibold uppercase text-slate-300">
               Appearance
             </h3>
@@ -189,7 +185,10 @@ export default function CharacterPreview({
             </dl>
           </section>
 
-          <section className="rounded-md border border-white/10 bg-white/5 p-3">
+          <section
+            aria-label="Backstory"
+            className="rounded-md border border-white/10 bg-white/5 p-3"
+          >
             <h3 className="text-sm font-semibold uppercase text-slate-300">
               Backstory
             </h3>

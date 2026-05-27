@@ -11,6 +11,8 @@ import {
   type StatName,
   type Step2Character,
 } from "@/lib/characterSchema";
+import { getStatValue, statLabels } from "@/lib/characterUtils";
+import FieldError from "@/components/ui/FieldError";
 
 type Step2StatsProps = {
   characterClass?: CharacterClass;
@@ -27,17 +29,6 @@ const defaultStepValues: Step2Character = {
   agility: 10,
   vitality: 10,
 };
-
-const statLabels: Record<StatName, string> = {
-  strength: "Strength",
-  intelligence: "Intelligence",
-  agility: "Agility",
-  vitality: "Vitality",
-};
-
-function getStatValue(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
 
 export default function Step2Stats({
   characterClass = "Warrior",
@@ -107,8 +98,9 @@ export default function Step2Stats({
         </div>
 
         <div
+          aria-live="polite"
           className={[
-            "rounded-md border px-3 py-2 text-sm font-semibold",
+            "shrink-0 rounded-md border px-3 py-2 text-sm font-semibold",
             isOverBudget
               ? "border-red-200 bg-red-50 text-red-700"
               : "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -169,16 +161,14 @@ export default function Step2Stats({
                   {isBonusStat ? " after class bonus" : ""}
                 </p>
 
-                {error ? (
-                  <p className="mt-2 text-sm text-red-600">{error.message}</p>
-                ) : null}
+                <FieldError message={error?.message} />
               </div>
             );
           })}
         </div>
 
         {isOverBudget ? (
-          <p className="text-sm font-medium text-red-600">
+          <p className="text-sm font-medium text-red-600" role="alert">
             Reduce your base stats to 50 points or fewer before class bonuses.
           </p>
         ) : null}

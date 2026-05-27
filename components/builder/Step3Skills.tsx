@@ -1,14 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import {
   addSkill,
   canSelectSkill,
   getBlockedReason,
   removeSkill,
   skillTree,
+  type SkillNode,
 } from "@/lib/skillTree";
+import { getSkillName } from "@/lib/characterUtils";
 
 type Step3SkillsProps = {
   defaultValues?: string[];
@@ -23,11 +25,17 @@ type Feedback = {
   version: number;
 };
 
-const maxSelectedSkills = 3;
+type SkillButtonProps = {
+  blockedReason: string | null;
+  feedbackType: Feedback["type"] | null;
+  isBlocked: boolean;
+  isSelected: boolean;
+  maxSelectedSkills: number;
+  onClick: (skillId: string) => void;
+  skill: SkillNode;
+};
 
-function getSkillName(skillId: string) {
-  return skillTree.find((skill) => skill.id === skillId)?.name ?? skillId;
-}
+const maxSelectedSkills = 3;
 
 function getPrerequisiteText(requires: string[]) {
   if (requires.length === 0) {
@@ -36,6 +44,83 @@ function getPrerequisiteText(requires: string[]) {
 
   return `Requires: ${requires.map(getSkillName).join(", ")}`;
 }
+
+// Memoized to avoid re-rendering unaffected skill cards when selections change
+const SkillButton = memo(function SkillButton({
+  blockedReason,
+  feedbackType,
+  isBlocked,
+  isSelected,
+  maxSelectedSkills: max,
+  onClick,
+  skill,
+}: SkillButtonProps) {
+  const animation =
+    feedbackType === "blocked"
+      ? { x: [0, -6, 6, -4, 4, 0] }
+      : feedbackType === "selected"
+        ? { scale: [1, 1.04, 1] }
+        : { x: 0, scale: 1 };
+  const title = [
+    skill.description,
+    getPrerequisiteText(skill.requires),
+    isBlocked ? (blockedReason ?? `Maximum ${max} selected skills reached.`) : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <motion.button
+      animate={animation}
+      aria-pressed={isSelected}
+      className={[
+        "flex min-h-44 flex-col rounded-lg border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2",
+        isSelected
+          ? "border-emerald-500 bg-emerald-50 shadow-sm"
+          : "border-slate-200 bg-white hover:border-slate-300",
+        isBlocked ? "cursor-pointer opacity-70" : "",
+      ].join(" ")}
+      key={skill.id}
+      onClick={() => onClick(skill.id)}
+      title={title}
+      transition={{ duration: 0.25 }}
+      type="button"
+      whileHover={{ y: -2 }}
+    >
+      <span className="flex items-start justify-between gap-3">
+        <span>
+          <span className="block text-base font-semibold text-slate-950">
+            {skill.name}
+          </span>
+          <span className="mt-1 block text-sm text-slate-600">
+            {skill.description}
+          </span>
+        </span>
+
+        <span
+          className={[
+            "shrink-0 rounded-full px-2 py-1 text-xs font-semibold",
+            isSelected
+              ? "bg-emerald-600 text-white"
+              : "bg-slate-100 text-slate-600",
+          ].join(" ")}
+        >
+          {isSelected ? "Selected" : "Skill"}
+        </span>
+      </span>
+
+      <span className="mt-auto pt-4 text-sm text-slate-600">
+        {getPrerequisiteText(skill.requires)}
+      </span>
+
+      {isBlocked ? (
+        <span className="mt-2 text-sm font-medium text-red-600">
+          {blockedReason ?? `Maximum ${max} selected skills reached.`}
+        </span>
+      ) : null}
+    </motion.button>
+  );
+});
 
 export default function Step3Skills({
   defaultValues = [],
@@ -64,50 +149,53 @@ export default function Step3Skills({
     }));
   }
 
-  function handleSkillClick(skillId: string) {
-    if (selectedSkillSet.has(skillId)) {
-      const nextSkills = removeSkill(selectedSkills, skillId);
-      const removedCount = selectedSkills.length - nextSkills.length;
+  const handleSkillClick = useCallback(
+    (skillId: string) => {
+      if (selectedSkillSet.has(skillId)) {
+        const nextSkills = removeSkill(selectedSkills, skillId);
+        const removedCount = selectedSkills.length - nextSkills.length;
+
+        setSelectedSkills(nextSkills);
+        onChange?.(nextSkills);
+        setSkillFeedback(
+          skillId,
+          "removed",
+          removedCount > 1
+            ? `Removed ${getSkillName(skillId)} and ${removedCount - 1} dependent skill(s).`
+            : `Removed ${getSkillName(skillId)}.`,
+        );
+        return;
+      }
+
+      const blockedReason = getBlockedReason(skillId, selectedSkills);
+
+      if (blockedReason) {
+        setSkillFeedback(skillId, "blocked", blockedReason);
+        return;
+      }
+
+      if (selectedSkills.length >= maxSelectedSkills) {
+        setSkillFeedback(
+          skillId,
+          "blocked",
+          `Choose up to ${maxSelectedSkills} skills. Remove one before selecting another.`,
+        );
+        return;
+      }
+
+      if (!canSelectSkill(selectedSkills, skillId)) {
+        setSkillFeedback(skillId, "blocked", "Select the required skills first.");
+        return;
+      }
+
+      const nextSkills = addSkill(selectedSkills, skillId);
 
       setSelectedSkills(nextSkills);
       onChange?.(nextSkills);
-      setSkillFeedback(
-        skillId,
-        "removed",
-        removedCount > 1
-          ? `Removed ${getSkillName(skillId)} and ${removedCount - 1} dependent skill(s).`
-          : `Removed ${getSkillName(skillId)}.`,
-      );
-      return;
-    }
-
-    const blockedReason = getBlockedReason(skillId, selectedSkills);
-
-    if (blockedReason) {
-      setSkillFeedback(skillId, "blocked", blockedReason);
-      return;
-    }
-
-    if (selectedSkills.length >= maxSelectedSkills) {
-      setSkillFeedback(
-        skillId,
-        "blocked",
-        `Choose up to ${maxSelectedSkills} skills. Remove one before selecting another.`,
-      );
-      return;
-    }
-
-    if (!canSelectSkill(selectedSkills, skillId)) {
-      setSkillFeedback(skillId, "blocked", "Select the required skills first.");
-      return;
-    }
-
-    const nextSkills = addSkill(selectedSkills, skillId);
-
-    setSelectedSkills(nextSkills);
-    onChange?.(nextSkills);
-    setSkillFeedback(skillId, "selected", `${getSkillName(skillId)} selected.`);
-  }
+      setSkillFeedback(skillId, "selected", `${getSkillName(skillId)} selected.`);
+    },
+    [selectedSkills, selectedSkillSet, onChange],
+  );
 
   function handleSubmit() {
     onSubmit?.(selectedSkills);
@@ -132,9 +220,15 @@ export default function Step3Skills({
         </div>
       </div>
 
+      {/* Persistent live region: always in DOM so screen readers reliably announce changes */}
+      <span aria-live="polite" className="sr-only">
+        {feedback?.message}
+      </span>
+
       {feedback ? (
         <motion.p
           animate={{ opacity: 1, y: 0 }}
+          aria-hidden="true"
           className={[
             "mb-4 rounded-md border px-3 py-2 text-sm font-medium",
             feedback.type === "blocked"
@@ -149,14 +243,13 @@ export default function Step3Skills({
           ].join(" ")}
           initial={{ opacity: 0, y: -4 }}
           key={feedback.version}
-          role={feedback.type === "blocked" ? "alert" : "status"}
           transition={{ duration: 0.2 }}
         >
           {feedback.message}
         </motion.p>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {skillTree.map((skill) => {
           const isSelected = selectedSkillSet.has(skill.id);
           const blockedReason = getBlockedReason(skill.id, selectedSkills);
@@ -165,75 +258,20 @@ export default function Step3Skills({
             (Boolean(blockedReason) ||
               selectedSkills.length >= maxSelectedSkills ||
               !canSelectSkill(selectedSkills, skill.id));
-          const title = [
-            skill.description,
-            getPrerequisiteText(skill.requires),
-            isBlocked
-              ? blockedReason ??
-                `Maximum ${maxSelectedSkills} selected skills reached.`
-              : null,
-          ]
-            .filter(Boolean)
-            .join(" ");
-          const feedbackType = feedback?.id === skill.id ? feedback.type : null;
-          const animation =
-            feedbackType === "blocked"
-              ? { x: [0, -6, 6, -4, 4, 0] }
-              : feedbackType === "selected"
-                ? { scale: [1, 1.04, 1] }
-                : { x: 0, scale: 1 };
+          const feedbackType =
+            feedback?.id === skill.id ? feedback.type : null;
 
           return (
-            <motion.button
-              animate={animation}
-              aria-pressed={isSelected}
-              className={[
-                "flex min-h-44 flex-col rounded-lg border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2",
-                isSelected
-                  ? "border-emerald-500 bg-emerald-50 shadow-sm"
-                  : "border-slate-200 bg-white hover:border-slate-300",
-                isBlocked ? "cursor-pointer opacity-70" : "",
-              ].join(" ")}
+            <SkillButton
+              blockedReason={blockedReason}
+              feedbackType={feedbackType}
+              isBlocked={isBlocked}
+              isSelected={isSelected}
               key={skill.id}
-              onClick={() => handleSkillClick(skill.id)}
-              title={title}
-              transition={{ duration: 0.25 }}
-              type="button"
-              whileHover={{ y: -2 }}
-            >
-              <span className="flex items-start justify-between gap-3">
-                <span>
-                  <span className="block text-base font-semibold text-slate-950">
-                    {skill.name}
-                  </span>
-                  <span className="mt-1 block text-sm text-slate-600">
-                    {skill.description}
-                  </span>
-                </span>
-
-                <span
-                  className={[
-                    "shrink-0 rounded-full px-2 py-1 text-xs font-semibold",
-                    isSelected
-                      ? "bg-emerald-600 text-white"
-                      : "bg-slate-100 text-slate-600",
-                  ].join(" ")}
-                >
-                  {isSelected ? "Selected" : "Skill"}
-                </span>
-              </span>
-
-              <span className="mt-auto pt-4 text-sm text-slate-600">
-                {getPrerequisiteText(skill.requires)}
-              </span>
-
-              {isBlocked ? (
-                <span className="mt-2 text-sm font-medium text-red-600">
-                  {blockedReason ??
-                    `Maximum ${maxSelectedSkills} selected skills reached.`}
-                </span>
-              ) : null}
-            </motion.button>
+              maxSelectedSkills={maxSelectedSkills}
+              onClick={handleSkillClick}
+              skill={skill}
+            />
           );
         })}
       </div>

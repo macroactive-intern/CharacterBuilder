@@ -15,6 +15,7 @@ import {
   saveDraft,
   type CharacterData,
 } from "@/lib/characterStorage";
+import { createSlug } from "@/lib/characterUtils";
 
 export type StepDirection = 1 | -1;
 
@@ -68,13 +69,7 @@ function getErrorMessage(error: unknown) {
 }
 
 function createDownloadName(name: string) {
-  const slug = name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  return `${slug || "character"}-builder-export.json`;
+  return `${createSlug(name)}-builder-export.json`;
 }
 
 function getImportCandidate(value: unknown) {

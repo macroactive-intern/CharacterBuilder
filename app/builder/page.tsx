@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
 import BuilderProgress from "@/components/builder/BuilderProgress";
 import CharacterPreview from "@/components/builder/CharacterPreview";
@@ -33,6 +33,13 @@ const stepVariants = {
   }),
 };
 
+// Reduced-motion variant: fade only, no slide
+const stepVariantsReduced = {
+  enter: { opacity: 0 },
+  center: { opacity: 1 },
+  exit: { opacity: 0 },
+};
+
 export default function BuilderPage() {
   const {
     currentStep,
@@ -51,6 +58,7 @@ export default function BuilderPage() {
     updateData,
   } = useCharacterBuilder();
   const [importText, setImportText] = useState("");
+  const prefersReducedMotion = useReducedMotion();
   const characterClass =
     (formData.class as CharacterClass | undefined) ?? defaultCharacter.class;
   const selectedSkills = formData.skills ?? [];
@@ -145,7 +153,10 @@ export default function BuilderPage() {
 
         <BuilderProgress currentStep={currentStep} />
 
-        <section className="mt-6 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <section
+          aria-label="Import and export"
+          className="mt-6 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+        >
           <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-start">
             <div className="space-y-2">
               <label
@@ -161,14 +172,19 @@ export default function BuilderPage() {
                 placeholder='Paste JSON, for example {"character":{...}}'
                 value={importText}
               />
-              {importExportError ? (
-                <p className="text-sm text-red-600">{importExportError}</p>
-              ) : null}
-              {importExportMessage ? (
-                <p className="text-sm text-emerald-700">
-                  {importExportMessage}
-                </p>
-              ) : null}
+              {/* aria-live so screen readers announce import/export results */}
+              <div aria-live="polite">
+                {importExportError ? (
+                  <p className="text-sm text-red-600" role="alert">
+                    {importExportError}
+                  </p>
+                ) : null}
+                {importExportMessage ? (
+                  <p className="text-sm text-emerald-700">
+                    {importExportMessage}
+                  </p>
+                ) : null}
+              </div>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
@@ -201,7 +217,9 @@ export default function BuilderPage() {
                 initial="enter"
                 key={`${currentStep}-${importVersion}`}
                 transition={{ duration: 0.28, ease: "easeOut" }}
-                variants={stepVariants}
+                variants={
+                  prefersReducedMotion ? stepVariantsReduced : stepVariants
+                }
               >
                 {renderStep()}
               </motion.div>

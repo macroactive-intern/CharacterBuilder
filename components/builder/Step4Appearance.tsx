@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { step4Schema, type Step4Character } from "@/lib/characterSchema";
+import FieldError from "@/components/ui/FieldError";
 
 type Step4AppearanceProps = {
   defaultValues?: Partial<Step4Character>;
@@ -81,11 +82,7 @@ export default function Step4Appearance({
               type="text"
               {...register("hairColor")}
             />
-            {errors.hairColor ? (
-              <p className="text-sm text-red-600">
-                {errors.hairColor.message}
-              </p>
-            ) : null}
+            <FieldError message={errors.hairColor?.message} />
           </div>
 
           <div className="space-y-2">
@@ -102,9 +99,7 @@ export default function Step4Appearance({
               type="text"
               {...register("eyeColor")}
             />
-            {errors.eyeColor ? (
-              <p className="text-sm text-red-600">{errors.eyeColor.message}</p>
-            ) : null}
+            <FieldError message={errors.eyeColor?.message} />
           </div>
 
           <div className="space-y-2">
@@ -121,9 +116,7 @@ export default function Step4Appearance({
               type="text"
               {...register("height")}
             />
-            {errors.height ? (
-              <p className="text-sm text-red-600">{errors.height.message}</p>
-            ) : null}
+            <FieldError message={errors.height?.message} />
           </div>
         </div>
 
@@ -135,25 +128,27 @@ export default function Step4Appearance({
             >
               Motto
             </label>
+            {/* Linked via aria-describedby so screen readers announce the count on focus */}
             <span
+              aria-atomic="true"
               className={[
                 "text-xs font-medium",
                 mottoLength > mottoMaxLength ? "text-red-600" : "text-slate-500",
               ].join(" ")}
+              id="motto-count"
             >
               {mottoLength}/{mottoMaxLength}
             </span>
           </div>
           <textarea
+            aria-describedby="motto-count"
             className="min-h-24 w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
             id="motto"
             maxLength={mottoMaxLength}
             placeholder="No shadow without light."
             {...register("motto")}
           />
-          {errors.motto ? (
-            <p className="text-sm text-red-600">{errors.motto.message}</p>
-          ) : null}
+          <FieldError message={errors.motto?.message} />
         </div>
 
         <button

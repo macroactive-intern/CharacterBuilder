@@ -2,27 +2,18 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import cuid from "cuid";
 import { NextResponse } from "next/server";
-import { characterSchema } from "@/lib/characterSchema";
+import { characterSchema, type Character } from "@/lib/characterSchema";
+import { createSlug } from "@/lib/characterUtils";
 import { skillTree } from "@/lib/skillTree";
 
 export const runtime = "nodejs";
 
-type StoredCharacter = Record<string, unknown> & {
+type StoredCharacter = Character & {
   id: string;
   slug: string;
 };
 
 const charactersPath = path.join(process.cwd(), "data", "characters.json");
-
-function createSlug(name: string) {
-  const slug = name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  return slug || "character";
-}
 
 function createUniqueSlug(name: string, characters: StoredCharacter[]) {
   const baseSlug = createSlug(name);
