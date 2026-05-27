@@ -146,8 +146,17 @@ export function useCharacterBuilder() {
         throw new Error(result?.error ?? "Character submission failed.");
       }
 
+      const result = (await response.json()) as {
+        id?: string;
+        slug?: string;
+      };
+
+      if (!result.id) {
+        throw new Error("Character was saved, but no id was returned.");
+      }
+
       clearDraft();
-      router.push("/builder/success");
+      router.push(`/builder/success?id=${encodeURIComponent(result.id)}`);
 
       return true;
     } catch (error) {
