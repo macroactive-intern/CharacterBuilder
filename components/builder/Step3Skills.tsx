@@ -61,9 +61,10 @@ const SkillButton = memo(function SkillButton({
       : feedbackType === "selected"
         ? { scale: [1, 1.04, 1] }
         : { x: 0, scale: 1 };
+  const prerequisiteText = getPrerequisiteText(skill.requires);
   const title = [
     skill.description,
-    getPrerequisiteText(skill.requires),
+    prerequisiteText,
     isBlocked ? (blockedReason ?? `Maximum ${max} selected skills reached.`) : null,
   ]
     .filter(Boolean)
@@ -109,7 +110,7 @@ const SkillButton = memo(function SkillButton({
       </span>
 
       <span className="mt-auto pt-4 text-sm text-slate-600">
-        {getPrerequisiteText(skill.requires)}
+        {prerequisiteText}
       </span>
 
       {isBlocked ? (
