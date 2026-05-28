@@ -27,6 +27,14 @@ function formatStatName(stat: string) {
   return stat.charAt(0).toUpperCase() + stat.slice(1);
 }
 
+const classBonusText = characterClasses
+  .map((characterClass) => {
+    const bonus = classBonusConfig[characterClass];
+
+    return `${characterClass}: +${bonus.bonus} ${formatStatName(bonus.stat)}`;
+  })
+  .join(" | ");
+
 export default function Step1Class({
   defaultValues,
   onChange,
@@ -46,13 +54,6 @@ export default function Step1Class({
   });
   const selectedClass = watch("class", defaultStepValues.class);
   const selectedBonus = classBonusConfig[selectedClass];
-  const classBonusText = characterClasses
-    .map((characterClass) => {
-      const bonus = classBonusConfig[characterClass];
-
-      return `${characterClass}: +${bonus.bonus} ${formatStatName(bonus.stat)}`;
-    })
-    .join(" | ");
 
   useEffect(() => {
     const subscription = watch((values) => {
