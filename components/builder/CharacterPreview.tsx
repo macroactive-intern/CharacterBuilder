@@ -18,13 +18,13 @@ type CharacterPreviewProps = {
 // Defined outside the component so it is not recreated on each render
 function AnimatedValue({
   children,
+  prefersReducedMotion,
   valueKey,
 }: {
   children: ReactNode;
+  prefersReducedMotion: boolean | null;
   valueKey: string | number;
 }) {
-  const prefersReducedMotion = useReducedMotion();
-
   return (
     <motion.span
       animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
@@ -67,12 +67,18 @@ export default function CharacterPreview({
             Character Preview
           </p>
           <h2 className="mt-3 text-2xl font-bold">
-            <AnimatedValue valueKey={character.name}>
+            <AnimatedValue
+              prefersReducedMotion={prefersReducedMotion}
+              valueKey={character.name}
+            >
               {character.name || "Unnamed Hero"}
             </AnimatedValue>
           </h2>
           <p className="mt-1 text-sm font-medium text-emerald-50">
-            <AnimatedValue valueKey={character.class}>
+            <AnimatedValue
+              prefersReducedMotion={prefersReducedMotion}
+              valueKey={character.class}
+            >
               {character.class}
             </AnimatedValue>
           </p>
@@ -105,7 +111,10 @@ export default function CharacterPreview({
                       {statLabels[statName]}
                     </dt>
                     <dd className="mt-1 text-xl font-bold">
-                      <AnimatedValue valueKey={`${statName}-${finalValue}`}>
+                      <AnimatedValue
+                        prefersReducedMotion={prefersReducedMotion}
+                        valueKey={`${statName}-${finalValue}`}
+                      >
                         {finalValue}
                       </AnimatedValue>
                     </dd>
@@ -153,7 +162,10 @@ export default function CharacterPreview({
               <div>
                 <dt className="text-slate-400">Hair</dt>
                 <dd className="font-medium">
-                  <AnimatedValue valueKey={character.hairColor}>
+                  <AnimatedValue
+                    prefersReducedMotion={prefersReducedMotion}
+                    valueKey={character.hairColor}
+                  >
                     {character.hairColor || "Unset"}
                   </AnimatedValue>
                 </dd>
@@ -161,7 +173,10 @@ export default function CharacterPreview({
               <div>
                 <dt className="text-slate-400">Eyes</dt>
                 <dd className="font-medium">
-                  <AnimatedValue valueKey={character.eyeColor}>
+                  <AnimatedValue
+                    prefersReducedMotion={prefersReducedMotion}
+                    valueKey={character.eyeColor}
+                  >
                     {character.eyeColor || "Unset"}
                   </AnimatedValue>
                 </dd>
@@ -169,7 +184,10 @@ export default function CharacterPreview({
               <div>
                 <dt className="text-slate-400">Height</dt>
                 <dd className="font-medium">
-                  <AnimatedValue valueKey={character.height}>
+                  <AnimatedValue
+                    prefersReducedMotion={prefersReducedMotion}
+                    valueKey={character.height}
+                  >
                     {character.height || "Unset"}
                   </AnimatedValue>
                 </dd>
@@ -177,7 +195,10 @@ export default function CharacterPreview({
               <div>
                 <dt className="text-slate-400">Motto</dt>
                 <dd className="font-medium">
-                  <AnimatedValue valueKey={character.motto}>
+                  <AnimatedValue
+                    prefersReducedMotion={prefersReducedMotion}
+                    valueKey={character.motto}
+                  >
                     {character.motto || "Unset"}
                   </AnimatedValue>
                 </dd>
@@ -193,7 +214,10 @@ export default function CharacterPreview({
               Backstory
             </h3>
             <p className="mt-2 text-sm leading-6 text-slate-200">
-              <AnimatedValue valueKey={character.backstory}>
+              <AnimatedValue
+                prefersReducedMotion={prefersReducedMotion}
+                valueKey={character.backstory}
+              >
                 {character.backstory || "No backstory added yet."}
               </AnimatedValue>
             </p>
