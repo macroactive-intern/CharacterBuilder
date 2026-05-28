@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   classBonusConfig,
@@ -57,19 +57,12 @@ export default function Step2Stats({
   );
   const remainingPoints = maxStatTotal - baseTotal;
   const isOverBudget = remainingPoints < 0;
-  const bonusAdjustedStats = useMemo(
-    () =>
-      statNames.reduce(
-        (stats, statName) => ({
-          ...stats,
-          [statName]:
-            getStatValue(watchedStats[statName]) +
-            (statName === classBonus.stat ? classBonus.bonus : 0),
-        }),
-        {} as Record<StatName, number>,
-      ),
-    [classBonus.bonus, classBonus.stat, watchedStats],
-  );
+  function getFinalStatValue(statName: StatName) {
+    return (
+      getStatValue(watchedStats[statName]) +
+      (statName === classBonus.stat ? classBonus.bonus : 0)
+    );
+  }
 
   useEffect(() => {
     const subscription = watch((values) => {
@@ -156,7 +149,7 @@ export default function Step2Stats({
                 />
 
                 <p className="mt-2 text-sm text-slate-600" id={`${statName}-hint`}>
-                  Final: {bonusAdjustedStats[statName]}
+                  Final: {getFinalStatValue(statName)}
                   {isBonusStat ? " after class bonus" : ""}
                 </p>
 
