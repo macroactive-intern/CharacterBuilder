@@ -151,7 +151,6 @@ export default function Step2Stats({
                   id={statName}
                   max={20}
                   min={1}
-                  readOnly={isBonusStat}
                   type="number"
                   {...register(statName, { valueAsNumber: true })}
                 />
