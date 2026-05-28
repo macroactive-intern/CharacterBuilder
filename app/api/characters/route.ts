@@ -14,6 +14,7 @@ type StoredCharacter = Character & {
 };
 
 const charactersPath = path.join(process.cwd(), "data", "characters.json");
+let characterWriteQueue: Promise<void> = Promise.resolve();
 
 function createUniqueSlug(name: string, characters: StoredCharacter[]) {
   const baseSlug = createSlug(name);
@@ -103,6 +104,17 @@ async function writeCharacters(characters: StoredCharacter[]) {
   await rename(tempPath, charactersPath);
 }
 
+function withCharacterWriteLock<T>(operation: () => Promise<T>) {
+  const run = characterWriteQueue.catch(() => undefined).then(operation);
+
+  characterWriteQueue = run.then(
+    () => undefined,
+    () => undefined,
+  );
+
+  return run;
+}
+
 export async function GET() {
   const characters = await readCharacters();
 
@@ -146,16 +158,20 @@ export async function POST(request: Request) {
   }
 
   try {
-    const characters = await readCharacters();
-    const id = cuid();
-    const slug = createUniqueSlug(parsedCharacter.data.name, characters);
-    const storedCharacter: StoredCharacter = {
-      ...parsedCharacter.data,
-      id,
-      slug,
-    };
+    const { id, slug } = await withCharacterWriteLock(async () => {
+      const characters = await readCharacters();
+      const id = cuid();
+      const slug = createUniqueSlug(parsedCharacter.data.name, characters);
+      const storedCharacter: StoredCharacter = {
+        ...parsedCharacter.data,
+        id,
+        slug,
+      };
 
-    await writeCharacters([...characters, storedCharacter]);
+      await writeCharacters([...characters, storedCharacter]);
+
+      return { id, slug };
+    });
 
     return NextResponse.json({ id, slug }, { status: 201 });
   } catch {
