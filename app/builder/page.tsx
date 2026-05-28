@@ -177,7 +177,7 @@ export default function BuilderPage() {
               {/* aria-live so screen readers announce import/export results */}
               <div aria-live="polite">
                 {importExportError ? (
-                  <p className="text-sm text-red-600" role="alert">
+                  <p className="text-sm text-red-600">
                     {importExportError}
                   </p>
                 ) : null}
