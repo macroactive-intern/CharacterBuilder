@@ -23,28 +23,33 @@ export const FIRST_STEP = 1;
 export const LAST_STEP = 5;
 const DRAFT_SAVE_DEBOUNCE_MS = 300;
 
+type UrlStepResult =
+  | { type: "absent" }
+  | { type: "invalid" }
+  | { step: number; type: "valid" };
+
 function clampStep(step: number) {
   return Math.min(Math.max(step, FIRST_STEP), LAST_STEP);
 }
 
-function parseUrlStep() {
+function parseUrlStep(): UrlStepResult {
   if (typeof window === "undefined") {
-    return null;
+    return { type: "absent" };
   }
 
   const stepParam = new URLSearchParams(window.location.search).get("step");
 
   if (stepParam === null) {
-    return null;
+    return { type: "absent" };
   }
 
   const step = Number(stepParam);
 
   if (!Number.isInteger(step) || step < FIRST_STEP || step > LAST_STEP) {
-    return undefined;
+    return { type: "invalid" };
   }
 
-  return step;
+  return { step, type: "valid" };
 }
 
 function syncStepUrl(step: number, mode: "push" | "replace") {
@@ -123,14 +128,13 @@ export function useCharacterBuilder() {
   useEffect(() => {
     const draft = loadDraft();
     const parsedStep = parseUrlStep();
-    const isInvalidUrlStep = parsedStep === undefined;
     const restoredStep = draft ? clampStep(draft.step) : FIRST_STEP;
     const initialStep =
-      parsedStep === null
+      parsedStep.type === "absent"
         ? restoredStep
-        : isInvalidUrlStep
+        : parsedStep.type === "invalid"
           ? FIRST_STEP
-          : parsedStep;
+          : parsedStep.step;
 
     if (draft) {
       const restoredData = {
@@ -150,9 +154,10 @@ export function useCharacterBuilder() {
   useEffect(() => {
     function handlePopState() {
       const parsedStep = parseUrlStep();
-      const nextStep = parsedStep ?? FIRST_STEP;
+      const nextStep =
+        parsedStep.type === "valid" ? parsedStep.step : FIRST_STEP;
 
-      if (parsedStep === null || parsedStep === undefined) {
+      if (parsedStep.type !== "valid") {
         syncStepUrl(nextStep, "replace");
       }
 
