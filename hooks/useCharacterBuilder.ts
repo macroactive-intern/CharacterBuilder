@@ -409,7 +409,6 @@ export function useCharacterBuilder() {
     }),
     [
       currentStep,
-      form,
       formData,
       goToStep,
       importCharacter,
