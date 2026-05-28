@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { step4Schema, type Step4Character } from "@/lib/characterSchema";
 import FieldError from "@/components/ui/FieldError";
@@ -26,24 +26,25 @@ export default function Step4Appearance({
   onChange,
   onSubmit,
 }: Step4AppearanceProps) {
+  const initialValues = {
+    ...defaultStepValues,
+    ...defaultValues,
+  };
+  const [mottoLength, setMottoLength] = useState(initialValues.motto.length);
   const {
     formState: { errors },
     handleSubmit,
     register,
     watch,
   } = useForm<Step4Character>({
-    defaultValues: {
-      ...defaultStepValues,
-      ...defaultValues,
-    },
+    defaultValues: initialValues,
     mode: "onChange",
     resolver: zodResolver(step4Schema),
   });
-  const motto = watch("motto", "");
-  const mottoLength = motto.length;
 
   useEffect(() => {
     const subscription = watch((values) => {
+      setMottoLength((values.motto ?? "").length);
       onChange?.(values as Partial<Step4Character>);
     });
 
