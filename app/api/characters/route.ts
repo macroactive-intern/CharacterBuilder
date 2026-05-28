@@ -14,7 +14,19 @@ type StoredCharacter = Character & {
 };
 
 const charactersPath = path.join(process.cwd(), "data", "characters.json");
+const maxCharacterRequestBytes = 64 * 1024;
 let characterWriteQueue: Promise<void> = Promise.resolve();
+
+type JsonBodyResult =
+  | {
+      body: unknown;
+      ok: true;
+    }
+  | {
+      error: string;
+      ok: false;
+      status: number;
+    };
 
 function createUniqueSlug(name: string, characters: StoredCharacter[]) {
   const baseSlug = createSlug(name);
@@ -62,6 +74,78 @@ function validateSkills(skillIds: string[]) {
   }
 
   return null;
+}
+
+function combineChunks(chunks: Uint8Array[], byteLength: number) {
+  const body = new Uint8Array(byteLength);
+  let offset = 0;
+
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return body;
+}
+
+async function readLimitedJsonBody(request: Request): Promise<JsonBodyResult> {
+  const contentLength = Number(request.headers.get("content-length"));
+
+  if (Number.isFinite(contentLength) && contentLength > maxCharacterRequestBytes) {
+    return {
+      error: "Request body is too large.",
+      ok: false,
+      status: 413,
+    };
+  }
+
+  if (!request.body) {
+    return {
+      error: "Invalid JSON request body.",
+      ok: false,
+      status: 400,
+    };
+  }
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let receivedBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      receivedBytes += value.byteLength;
+
+      if (receivedBytes > maxCharacterRequestBytes) {
+        await reader.cancel();
+        return {
+          error: "Request body is too large.",
+          ok: false,
+          status: 413,
+        };
+      }
+
+      chunks.push(value);
+    }
+
+    const text = new TextDecoder().decode(combineChunks(chunks, receivedBytes));
+
+    return {
+      body: JSON.parse(text) as unknown,
+      ok: true,
+    };
+  } catch {
+    return {
+      error: "Invalid JSON request body.",
+      ok: false,
+      status: 400,
+    };
+  }
 }
 
 async function ensureCharactersFile() {
@@ -122,18 +206,16 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  let body: unknown;
+  const bodyResult = await readLimitedJsonBody(request);
 
-  try {
-    body = await request.json();
-  } catch {
+  if (!bodyResult.ok) {
     return NextResponse.json(
-      { error: "Invalid JSON request body." },
-      { status: 400 },
+      { error: bodyResult.error },
+      { status: bodyResult.status },
     );
   }
 
-  const parsedCharacter = characterSchema.safeParse(body);
+  const parsedCharacter = characterSchema.safeParse(bodyResult.body);
 
   if (!parsedCharacter.success) {
     return NextResponse.json(
