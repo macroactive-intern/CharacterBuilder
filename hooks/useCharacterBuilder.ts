@@ -392,7 +392,6 @@ export function useCharacterBuilder() {
       form,
       formData,
       currentStep,
-      step: currentStep,
       stepDirection,
       isSubmitting,
       importCharacter,
