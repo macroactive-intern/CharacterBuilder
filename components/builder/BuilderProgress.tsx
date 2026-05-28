@@ -61,6 +61,7 @@ export default function BuilderProgress({ currentStep }: BuilderProgressProps) {
                     "w-full truncate text-xs font-medium sm:text-sm",
                     isActive ? "text-slate-950" : "text-slate-500",
                   ].join(" ")}
+                  title={step}
                 >
                   {step}
                 </span>
