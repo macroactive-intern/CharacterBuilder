@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 import {
   addSkill,
   canSelectSkill,
@@ -130,29 +130,34 @@ export default function Step3Skills({
     Array.from(new Set(defaultValues)).slice(0, maxSelectedSkills),
   );
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const selectedSkillsRef = useRef(selectedSkills);
+
+  selectedSkillsRef.current = selectedSkills;
+
   const selectedSkillSet = useMemo(
     () => new Set(selectedSkills),
     [selectedSkills],
   );
 
-  function setSkillFeedback(
-    skillId: string,
-    type: Feedback["type"],
-    message: string,
-  ) {
-    setFeedback((currentFeedback) => ({
-      id: skillId,
-      message,
-      type,
-      version: (currentFeedback?.version ?? 0) + 1,
-    }));
-  }
+  const setSkillFeedback = useCallback(
+    (skillId: string, type: Feedback["type"], message: string) => {
+      setFeedback((currentFeedback) => ({
+        id: skillId,
+        message,
+        type,
+        version: (currentFeedback?.version ?? 0) + 1,
+      }));
+    },
+    [],
+  );
 
   const handleSkillClick = useCallback(
     (skillId: string) => {
-      if (selectedSkillSet.has(skillId)) {
-        const nextSkills = removeSkill(selectedSkills, skillId);
-        const removedCount = selectedSkills.length - nextSkills.length;
+      const skills = selectedSkillsRef.current;
+
+      if (skills.includes(skillId)) {
+        const nextSkills = removeSkill(skills, skillId);
+        const removedCount = skills.length - nextSkills.length;
 
         setSelectedSkills(nextSkills);
         onChange?.(nextSkills);
@@ -166,14 +171,14 @@ export default function Step3Skills({
         return;
       }
 
-      const blockedReason = getBlockedReason(skillId, selectedSkills);
+      const blockedReason = getBlockedReason(skillId, skills);
 
       if (blockedReason) {
         setSkillFeedback(skillId, "blocked", blockedReason);
         return;
       }
 
-      if (selectedSkills.length >= maxSelectedSkills) {
+      if (skills.length >= maxSelectedSkills) {
         setSkillFeedback(
           skillId,
           "blocked",
@@ -182,18 +187,18 @@ export default function Step3Skills({
         return;
       }
 
-      if (!canSelectSkill(selectedSkills, skillId)) {
+      if (!canSelectSkill(skills, skillId)) {
         setSkillFeedback(skillId, "blocked", "Select the required skills first.");
         return;
       }
 
-      const nextSkills = addSkill(selectedSkills, skillId);
+      const nextSkills = addSkill(skills, skillId);
 
       setSelectedSkills(nextSkills);
       onChange?.(nextSkills);
       setSkillFeedback(skillId, "selected", `${getSkillName(skillId)} selected.`);
     },
-    [selectedSkills, selectedSkillSet, onChange],
+    [onChange, setSkillFeedback],
   );
 
   function handleSubmit() {
