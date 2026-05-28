@@ -21,6 +21,7 @@ export type StepDirection = 1 | -1;
 
 export const FIRST_STEP = 1;
 export const LAST_STEP = 5;
+const DRAFT_SAVE_DEBOUNCE_MS = 300;
 
 function clampStep(step: number) {
   return Math.min(Math.max(step, FIRST_STEP), LAST_STEP);
@@ -182,10 +183,14 @@ export function useCharacterBuilder() {
       return;
     }
 
-    saveDraft({
-      step: currentStep,
-      data: formData,
-    });
+    const timeoutId = window.setTimeout(() => {
+      saveDraft({
+        step: currentStep,
+        data: formData,
+      });
+    }, DRAFT_SAVE_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timeoutId);
   }, [currentStep, formData, hasRestoredDraft]);
 
   const goToStep = useCallback((step: number) => {
