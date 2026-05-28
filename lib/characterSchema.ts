@@ -64,7 +64,6 @@ function hasValidBaseStatTotal(stats: z.infer<typeof step2BaseSchema>) {
 
 export const step2Schema = step2BaseSchema.refine(hasValidBaseStatTotal, {
   message: "Total stats must be 50 or less before class bonus.",
-  path: ["strength"],
 });
 
 export const step3Schema = z.object({
@@ -99,7 +98,6 @@ export const characterInputSchema = z
   })
   .refine(hasValidBaseStatTotal, {
     message: "Total stats must be 50 or less before class bonus.",
-    path: ["strength"],
   });
 
 export const characterSchema = characterInputSchema.transform((character) => {
