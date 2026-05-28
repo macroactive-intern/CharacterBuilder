@@ -40,6 +40,8 @@ const stepVariantsReduced = {
   exit: { opacity: 0 },
 };
 
+const EMPTY_SKILLS: string[] = [];
+
 export default function BuilderPage() {
   const {
     currentStep,
@@ -61,7 +63,7 @@ export default function BuilderPage() {
   const prefersReducedMotion = useReducedMotion();
   const characterClass =
     (formData.class as CharacterClass | undefined) ?? defaultCharacter.class;
-  const selectedSkills = formData.skills ?? [];
+  const selectedSkills = formData.skills ?? EMPTY_SKILLS;
 
   function saveStep1(data: Step1Character) {
     updateData(data);
