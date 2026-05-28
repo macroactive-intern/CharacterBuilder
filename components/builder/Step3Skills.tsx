@@ -80,7 +80,6 @@ const SkillButton = memo(function SkillButton({
           : "border-slate-200 bg-white hover:border-slate-300",
         isBlocked ? "cursor-pointer opacity-70" : "",
       ].join(" ")}
-      key={skill.id}
       onClick={() => onClick(skill.id)}
       title={title}
       transition={{ duration: 0.25 }}
