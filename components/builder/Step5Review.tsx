@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   characterSchema,
   classBonusConfig,
@@ -33,11 +34,17 @@ export default function Step5Review({
   selectedSkills = [],
   validationError,
 }: Step5ReviewProps) {
-  const character = {
-    ...defaultCharacter,
-    ...data,
-  };
-  const validation = characterSchema.safeParse(character);
+  const character = useMemo(
+    () => ({
+      ...defaultCharacter,
+      ...data,
+    }),
+    [data],
+  );
+  const validation = useMemo(
+    () => characterSchema.safeParse(character),
+    [character],
+  );
   const hasSchemaErrors = !validation.success;
   const validationMessages = [
     ...normalizeErrors(validationError),
