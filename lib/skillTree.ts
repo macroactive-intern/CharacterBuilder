@@ -82,8 +82,6 @@ export const skillTree: SkillNode[] = [
   },
 ];
 
-export const skillConfig = skillTree;
-
 function toSelectedSet(selectedSkills: SelectedSkills) {
   return new Set(selectedSkills);
 }

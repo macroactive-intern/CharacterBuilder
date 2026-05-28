@@ -226,9 +226,14 @@ export default function Step3Skills({
       </div>
 
       {/* Persistent live region: always in DOM so screen readers reliably announce changes */}
-      <span aria-live="polite" className="sr-only">
+      <div
+        aria-atomic="true"
+        aria-live="polite"
+        className="sr-only"
+        role="status"
+      >
         {feedback?.message}
-      </span>
+      </div>
 
       {feedback ? (
         <motion.p
