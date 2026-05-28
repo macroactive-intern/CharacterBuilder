@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
+import BuilderErrorBoundary from "@/components/builder/BuilderErrorBoundary";
 import BuilderProgress from "@/components/builder/BuilderProgress";
 import CharacterPreview from "@/components/builder/CharacterPreview";
 import Step1Class from "@/components/builder/Step1Class";
@@ -43,6 +44,14 @@ const stepVariantsReduced = {
 const EMPTY_SKILLS: string[] = [];
 
 export default function BuilderPage() {
+  return (
+    <BuilderErrorBoundary>
+      <BuilderPageContent />
+    </BuilderErrorBoundary>
+  );
+}
+
+function BuilderPageContent() {
   const {
     currentStep,
     exportCharacter,
