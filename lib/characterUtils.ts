@@ -8,9 +8,11 @@ export const statLabels: Record<StatName, string> = {
   vitality: "Vitality",
 };
 
+const skillNameMap = new Map(skillTree.map((skill) => [skill.id, skill.name]));
+
 // Resolves stored skill IDs to human-readable display names
 export function getSkillName(skillId: string): string {
-  return skillTree.find((skill) => skill.id === skillId)?.name ?? skillId;
+  return skillNameMap.get(skillId) ?? skillId;
 }
 
 export function getStatValue(value: unknown): number {
