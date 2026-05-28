@@ -1,4 +1,8 @@
-import type { CharacterInput } from "@/lib/characterSchema";
+import {
+  characterInputSchema,
+  defaultCharacter,
+  type CharacterInput,
+} from "@/lib/characterSchema";
 
 export type CharacterData = CharacterInput;
 
@@ -38,6 +42,13 @@ function isStoredDraft(value: unknown): value is StoredDraft {
     typeof value.data === "object" &&
     value.data !== null
   );
+}
+
+function hasValidDraftData(draft: StoredDraft) {
+  return characterInputSchema.safeParse({
+    ...defaultCharacter,
+    ...draft.data,
+  }).success;
 }
 
 export function saveDraft(draft: DraftInput) {
@@ -83,6 +94,12 @@ export function loadDraft() {
     console.warn(
       `Discarded character draft because stored version ${parsedDraft.version} does not match current version ${CURRENT_VERSION}.`,
     );
+    return null;
+  }
+
+  if (!hasValidDraftData(parsedDraft)) {
+    storage.removeItem(draftStorageKey);
+    console.warn("Discarded character draft because stored data is invalid.");
     return null;
   }
 
